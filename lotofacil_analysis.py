@@ -304,6 +304,139 @@ def analyze_cluster_patterns(df: pd.DataFrame, labels: np.ndarray, features: np.
         print(f"   Frequência média: {avg_frequency.mean():.2f}")
 
 
+def generate_game_suggestion(frequency: pd.Series, kmeans: KMeans, features: np.ndarray, 
+                            labels: np.ndarray, n_numbers: int = 15) -> List[int]:
+    """
+    Gera uma sugestão de jogo personalizada para o próximo concurso.
+    
+    Esta função combina três estratégias para criar uma sugestão de jogo:
+    1. Números mais frequentes no histórico
+    2. Padrões identificados nos clusters
+    3. Aleatoriedade para evitar previsibilidade
+    
+    Args:
+        frequency (pd.Series): Série com a frequência de cada número
+        kmeans (KMeans): Modelo KMeans treinado
+        features (np.ndarray): Matriz de features dos concursos
+        labels (np.ndarray): Labels dos clusters
+        n_numbers (int): Quantidade de números para o jogo (padrão: 15)
+        
+    Returns:
+        List[int]: Lista de números sugeridos para o próximo jogo
+    """
+    print("\n" + "="*60)
+    print("GERANDO SUGESTÃO DE JOGO PERSONALIZADA")
+    print("="*60)
+    
+    # 1. Identificar os números mais frequentes
+    top_frequent = frequency.nlargest(10).index.tolist()
+    top_frequent_numbers = [int(num) for num in top_frequent]
+    print(f"\n✓ Top 10 números mais frequentes: {top_frequent_numbers}")
+    
+    # 2. Identificar o cluster mais representativo (maior)
+    unique_labels, counts = np.unique(labels, return_counts=True)
+    most_common_cluster = unique_labels[np.argmax(counts)]
+    
+    # Números mais comuns no cluster principal
+    cluster_mask = labels == most_common_cluster
+    cluster_features = features[cluster_mask]
+    avg_frequency = cluster_features.mean(axis=0)
+    
+    # Selecionar números com frequência acima de 0.5 no cluster
+    cluster_numbers = [i+1 for i, freq in enumerate(avg_frequency) if freq > 0.5]
+    print(f"✓ Números frequentes no cluster principal: {cluster_numbers}")
+    
+    # 3. Combinar estratégias
+    suggested_numbers = set()
+    
+    # Adicionar 6 números dos mais frequentes
+    for num in top_frequent_numbers[:6]:
+        suggested_numbers.add(num)
+    
+    # Adicionar 5 números do cluster principal
+    cluster_to_add = [n for n in cluster_numbers if n not in suggested_numbers][:5]
+    for num in cluster_to_add:
+        suggested_numbers.add(num)
+    
+    # Adicionar números aleatórios para completar 15
+    all_numbers = set(range(1, MAX_LOTTERY_NUMBER + 1))
+    remaining_numbers = list(all_numbers - suggested_numbers)
+    
+    # Calcular quantos números ainda são necessários
+    numbers_needed = n_numbers - len(suggested_numbers)
+    if numbers_needed > 0:
+        # Escolher aleatoriamente dos números restantes (mais eficiente)
+        random_selections = np.random.choice(remaining_numbers, size=numbers_needed, replace=False)
+        suggested_numbers.update(random_selections)
+    
+    # Converter para lista ordenada
+    final_suggestion = sorted([int(num) for num in suggested_numbers])
+    
+    print(f"\n{'='*60}")
+    print("🎲 SUGESTÃO DE JOGO PARA O PRÓXIMO CONCURSO")
+    print(f"{'='*60}")
+    print(f"\nNúmeros sugeridos: {final_suggestion}")
+    print(f"\nComposição da sugestão:")
+    print(f"  • 6 números baseados em frequência alta")
+    print(f"  • 5 números baseados no cluster principal")
+    print(f"  • 4 números aleatórios para diversificação")
+    print(f"\n⚠️  AVISO IMPORTANTE:")
+    print(f"Esta sugestão é apenas uma análise estatística educacional.")
+    print(f"Loterias são eventos aleatórios e este programa NÃO garante")
+    print(f"nenhum aumento real nas chances de ganhar!")
+    print(f"{'='*60}")
+    
+    return final_suggestion
+
+
+def analyze_suggestion_statistics(suggestion: List[int], frequency: pd.Series):
+    """
+    Analisa estatísticas da sugestão gerada.
+    
+    Esta função fornece informações adicionais sobre os números sugeridos,
+    incluindo suas frequências históricas e distribuição.
+    
+    Args:
+        suggestion (List[int]): Lista de números sugeridos
+        frequency (pd.Series): Série com a frequência de cada número
+    """
+    print("\n📊 ESTATÍSTICAS DA SUGESTÃO")
+    print("-" * 60)
+    
+    # Calcular estatísticas
+    suggestion_frequencies = []
+    for num in suggestion:
+        num_str = str(num).zfill(2)
+        freq = frequency.get(num_str, 0)
+        suggestion_frequencies.append(freq)
+    
+    avg_freq = np.mean(suggestion_frequencies)
+    min_freq = min(suggestion_frequencies)
+    max_freq = max(suggestion_frequencies)
+    
+    print(f"Frequência média dos números sugeridos: {avg_freq:.1f}")
+    print(f"Frequência mínima: {min_freq}")
+    print(f"Frequência máxima: {max_freq}")
+    
+    # Distribuição dos números
+    low_range = sum(1 for n in suggestion if n <= 8)
+    mid_range = sum(1 for n in suggestion if 9 <= n <= 17)
+    high_range = sum(1 for n in suggestion if n >= 18)
+    
+    print(f"\nDistribuição por faixas:")
+    print(f"  • Baixa (01-08): {low_range} números")
+    print(f"  • Média (09-17): {mid_range} números")
+    print(f"  • Alta (18-25): {high_range} números")
+    
+    # Números pares e ímpares
+    even = sum(1 for n in suggestion if n % 2 == 0)
+    odd = sum(1 for n in suggestion if n % 2 != 0)
+    
+    print(f"\nDistribuição par/ímpar:")
+    print(f"  • Pares: {even} números")
+    print(f"  • Ímpares: {odd} números")
+
+
 def main():
     """
     Função principal que executa todo o pipeline de análise.
@@ -316,6 +449,7 @@ def main():
     5. Clustering com KMeans
     6. Visualização dos clusters
     7. Análise dos padrões encontrados
+    8. Geração de sugestão personalizada de jogo
     """
     print("="*60)
     print("ANÁLISE DA LOTOFÁCIL COM MACHINE LEARNING")
@@ -345,6 +479,12 @@ def main():
         
         # 8. Analisar padrões dos clusters
         analyze_cluster_patterns(df, labels, features)
+        
+        # 9. Gerar sugestão de jogo para o próximo concurso
+        suggestion = generate_game_suggestion(frequency, kmeans, features, labels)
+        
+        # 10. Analisar estatísticas da sugestão
+        analyze_suggestion_statistics(suggestion, frequency)
         
         print("\n" + "="*60)
         print("✓ ANÁLISE CONCLUÍDA COM SUCESSO!")
