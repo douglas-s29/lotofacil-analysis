@@ -328,7 +328,7 @@ def generate_game_suggestion(frequency: pd.Series, kmeans: KMeans, features: np.
     print("GERANDO SUGESTÃO DE JOGO PERSONALIZADA")
     print("="*60)
     
-    # 1. Identificar os números mais frequentes (top 40%)
+    # 1. Identificar os números mais frequentes
     top_frequent = frequency.nlargest(10).index.tolist()
     top_frequent_numbers = [int(num) for num in top_frequent]
     print(f"\n✓ Top 10 números mais frequentes: {top_frequent_numbers}")
@@ -362,11 +362,12 @@ def generate_game_suggestion(frequency: pd.Series, kmeans: KMeans, features: np.
     all_numbers = set(range(1, MAX_LOTTERY_NUMBER + 1))
     remaining_numbers = list(all_numbers - suggested_numbers)
     
-    while len(suggested_numbers) < n_numbers:
-        # Escolher aleatoriamente dos números restantes
-        random_num = np.random.choice(remaining_numbers)
-        suggested_numbers.add(random_num)
-        remaining_numbers.remove(random_num)
+    # Calcular quantos números ainda são necessários
+    numbers_needed = n_numbers - len(suggested_numbers)
+    if numbers_needed > 0:
+        # Escolher aleatoriamente dos números restantes (mais eficiente)
+        random_selections = np.random.choice(remaining_numbers, size=numbers_needed, replace=False)
+        suggested_numbers.update(random_selections)
     
     # Converter para lista ordenada
     final_suggestion = sorted([int(num) for num in suggested_numbers])
