@@ -19,8 +19,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from sklearn.cluster import KMeans
 from sklearn.preprocessing import StandardScaler
+from sklearn.decomposition import PCA
 import numpy as np
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Tuple
+
+# Constants
+MAX_LOTTERY_NUMBER = 25
 
 
 def fetch_lotofacil_data(api_url: str = "https://loteriascaixa-api.herokuapp.com/api/lotofacil") -> Dict[str, Any]:
@@ -104,8 +108,8 @@ def calculate_number_frequency(df: pd.DataFrame) -> pd.Series:
     """
     print("\nCalculando frequência dos números...")
     
-    # Inicializar contador para números de 1 a 25
-    frequency = {str(i).zfill(2): 0 for i in range(1, 26)}
+    # Inicializar contador para números de 1 a MAX_LOTTERY_NUMBER
+    frequency = {str(i).zfill(2): 0 for i in range(1, MAX_LOTTERY_NUMBER + 1)}
     
     # Contar frequência de cada número
     for dezenas in df['dezenas']:
@@ -176,11 +180,11 @@ def prepare_data_for_clustering(df: pd.DataFrame) -> np.ndarray:
     
     for dezenas in df['dezenas']:
         # Criar vetor binário: 1 se número foi sorteado, 0 caso contrário
-        vector = [0] * 25
+        vector = [0] * MAX_LOTTERY_NUMBER
         if isinstance(dezenas, list):
             for numero in dezenas:
                 numero_int = int(numero) - 1  # Converter para índice (0-24)
-                if 0 <= numero_int < 25:
+                if 0 <= numero_int < MAX_LOTTERY_NUMBER:
                     vector[numero_int] = 1
         features.append(vector)
     
@@ -189,7 +193,7 @@ def prepare_data_for_clustering(df: pd.DataFrame) -> np.ndarray:
     return features_array
 
 
-def perform_kmeans_clustering(features: np.ndarray, n_clusters: int = 5) -> tuple:
+def perform_kmeans_clustering(features: np.ndarray, n_clusters: int = 5) -> Tuple[KMeans, np.ndarray, np.ndarray, StandardScaler]:
     """
     Aplica o algoritmo KMeans para identificar padrões nos sorteios.
     
@@ -202,7 +206,7 @@ def perform_kmeans_clustering(features: np.ndarray, n_clusters: int = 5) -> tupl
         n_clusters (int): Número de clusters a serem criados
         
     Returns:
-        tuple: (modelo KMeans, labels dos clusters, features normalizadas)
+        Tuple: (modelo KMeans, labels dos clusters, features normalizadas, scaler)
     """
     print(f"\nAplicando KMeans clustering com {n_clusters} clusters...")
     
@@ -223,7 +227,7 @@ def perform_kmeans_clustering(features: np.ndarray, n_clusters: int = 5) -> tupl
     for cluster_id, count in zip(unique, counts):
         print(f"    Cluster {cluster_id}: {count} concursos ({count/len(labels)*100:.1f}%)")
     
-    return kmeans, labels, features_scaled
+    return kmeans, labels, features_scaled, scaler
 
 
 def plot_cluster_visualization(features_scaled: np.ndarray, labels: np.ndarray, 
@@ -240,8 +244,6 @@ def plot_cluster_visualization(features_scaled: np.ndarray, labels: np.ndarray,
         output_file (str): Nome do arquivo para salvar o gráfico
     """
     print("\nGerando visualização dos clusters...")
-    
-    from sklearn.decomposition import PCA
     
     # Reduzir dimensionalidade para visualização 2D usando PCA
     pca = PCA(n_components=2)
@@ -336,7 +338,7 @@ def main():
         features = prepare_data_for_clustering(df)
         
         # 6. Aplicar KMeans clustering
-        kmeans, labels, features_scaled = perform_kmeans_clustering(features, n_clusters=5)
+        kmeans, labels, features_scaled, scaler = perform_kmeans_clustering(features, n_clusters=5)
         
         # 7. Visualizar clusters
         plot_cluster_visualization(features_scaled, labels)

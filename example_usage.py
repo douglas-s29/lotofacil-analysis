@@ -94,11 +94,11 @@ df = structure_data_to_dataframe(data)
 features = prepare_data_for_clustering(df)
 
 # Testar com 3 clusters
-kmeans3, labels3, features_scaled = perform_kmeans_clustering(features, n_clusters=3)
+kmeans3, labels3, features_scaled, scaler3 = perform_kmeans_clustering(features, n_clusters=3)
 plot_cluster_visualization(features_scaled, labels3, 'clusters_3.png')
 
 # Testar com 7 clusters
-kmeans7, labels7, features_scaled = perform_kmeans_clustering(features, n_clusters=7)
+kmeans7, labels7, features_scaled, scaler7 = perform_kmeans_clustering(features, n_clusters=7)
 plot_cluster_visualization(features_scaled, labels7, 'clusters_7.png')
 """)
 
