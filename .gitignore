@@ -126,3 +126,7 @@ dmypy.json
 *.png
 *.jpg
 *.jpeg
+
+# Test files
+test_*.py
+test_*.png
