@@ -102,6 +102,44 @@ kmeans7, labels7, features_scaled, scaler7 = perform_kmeans_clustering(features,
 plot_cluster_visualization(features_scaled, labels7, 'clusters_7.png')
 """)
 
+# Exemplo 5: Gerar sugestão de jogo
+print("\n" + "="*60)
+print("EXEMPLO 5: Gerar Sugestão de Jogo Personalizada")
+print("="*60)
+print("""
+Para gerar uma sugestão de jogo para o próximo concurso:
+
+from lotofacil_analysis import (
+    fetch_lotofacil_data,
+    structure_data_to_dataframe,
+    calculate_number_frequency,
+    prepare_data_for_clustering,
+    perform_kmeans_clustering,
+    generate_game_suggestion,
+    analyze_suggestion_statistics
+)
+
+# Obter e processar dados
+data = fetch_lotofacil_data()
+df = structure_data_to_dataframe(data)
+
+# Calcular frequência e aplicar clustering
+frequency = calculate_number_frequency(df)
+features = prepare_data_for_clustering(df)
+kmeans, labels, features_scaled, scaler = perform_kmeans_clustering(features)
+
+# Gerar sugestão personalizada
+suggestion = generate_game_suggestion(frequency, kmeans, features, labels)
+print(f"Números sugeridos: {suggestion}")
+
+# Analisar estatísticas da sugestão
+analyze_suggestion_statistics(suggestion, frequency)
+
+IMPORTANTE: Esta sugestão é apenas uma análise estatística educacional.
+Loterias são completamente aleatórias e este programa NÃO garante
+nenhum aumento nas chances de ganhar!
+""")
+
 print("\n" + "="*60)
 print("Para mais informações, consulte o README.md")
 print("="*60)
